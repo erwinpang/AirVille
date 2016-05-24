@@ -1,0 +1,12 @@
+Heap Sort - Array size 1,000:  Sorted: 162673 Reverse: 155825 Random: 74999
+Quick Sort - Array size 1,000:  Sorted: 58074 Reverse: 57023 Random: 101150
+Merge Sort - Array size 1,000:  Sorted: 275082 Reverse: 270329 Random: 444499
+Heap Sort - Array size 10,000:  Sorted: 1305234 Reverse: 1287583 Random: 485783
+Quick Sort - Array size 10,000:  Sorted: 192197 Reverse: 193466 Random: 257613
+Merge Sort - Array size 10,000:  Sorted: 935764 Reverse: 823441 Random: 755115
+Heap Sort - Array size 100,000:  Sorted: 14601839 Reverse: 13518718 Random: 530098
+Quick Sort - Array size 100,000:  Sorted: 2578356 Reverse: 2622744 Random: 3748818
+Merge Sort - Array size 100,000:  Sorted: 4926215 Reverse: 5685709 Random: 3540148
+Heap Sort - Array size 1,000,000:  Sorted: 113704604 Reverse: 97121755 Random: 3346043
+Quick Sort - Array size 1,000,000:  Sorted: 19047460 Reverse: 16118174 Random: 24996770
+Merge Sort - Array size 1,000,000:  Sorted: 42143091 Reverse: 41041960 Random: 41656627

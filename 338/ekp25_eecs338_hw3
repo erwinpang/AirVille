@@ -1,0 +1,211 @@
+Searcher Inserter Deleter Problem (Monitor-based solution)
+
+type search_insert_delete = monitor;
+
+var sPassingCnt:int; sPassedCnt:int; 					  //Counters for currently passing searchers and passed counters
+	sWaitCnt:int; iWaitCnt:int; dWaitCnt:int; 			  //Counters for waiting search/insert/delete
+	iStarvationServiceCnt:int; dStarvationServiceCnt:int; //Counters for starvation service
+
+	StarvationService:boolean; 							  //Are we in starvation mode?
+	iPassing:boolean; dPassing:boolean; 				  //Are inserters or deleters currently passing?
+	sBlocked:boolean; 									  //Are searchers blocked?
+	siEmptying:boolean;
+
+	sWait:condition; iWait:condition; dWait:condition; 
+
+
+procedure entry searcher-Enter(){
+	sWaitCnt++;
+	sWait.wait;
+	sWaitCnt--;
+	if(dPassing){
+		sWait.wait;
+		sPassingCnt++;
+		sWait.signal;
+	}
+	else if(sPassingCnt+sPassedCnt = 10){
+		sPassingCnt++;
+		sWait.signal;
+	}
+	else if(sPassingCnt+sPassedCnt = 10 and iWaitCnt = 10 and dWaitCnt = 0){
+		sPassedCnt :=0;
+		sPassingCnt++;
+		sWait.signal;
+	}
+	else{
+		StarvationService:=true;
+		sPassedCnt:=0;
+		iStarvationServiceCnt:=iWaitCnt;
+		iWaitCnt:=0
+		dStarvationServiceCnt:=dWaitCnt;
+		dWaitCnt:=0;
+		if(iPassing or sPassingCnt>0){
+			siEmptying:=true;
+		}
+		while(siEmptying)do no-op;
+		if(iStarvationServiceCnt != 0){
+			iWait.signal;
+		}
+		else{
+			dWait.signal;
+		}
+		sWait.wait
+		sPassingCnt++;
+		sWait.signal;
+	}
+}
+
+procedure entry searcher-Exit(){
+	if(siEmptying){
+		sPassingCnt--;
+		if(sPassingCnt=0 and !iPassing){
+			siEmptying:=False
+		}
+	}
+	else{
+		sPassingCnt--;
+		sPassedCnt++;
+		if(sPassingCnt=0 and sWaitCnt=0 and !iPassing and dWaitCnt != 0){
+			dWait.signal;
+		}
+	}
+}
+
+procedure entry inserter-Enter(){
+	iWaitCnt++;
+	if(StarvationService){
+		iWait.wait;
+	}
+	iWait.wait;
+	if(!StarvationService){
+		iPassing:=True;
+	}
+}
+
+procedure entry inserter-Exit(){
+	if(siEmptying){
+		iPassing:=False;
+		if(sPassingCnt=0){
+			siEmptying:=false
+
+		}
+	}
+	else{
+		if(StarvationService){
+			iStarvationServiceCnt--;
+			if(iStarvationServiceCnt!=0){
+				iWait.signal;
+			}
+			else if(dStarvationServiceCnt!=0){
+				dWait.signal;
+			}
+			else{
+				StarvationService:=False;
+				sWait.signal;
+				while(iWaitCnt!=0){
+					iWait.signal;
+					iWaitCnt--;
+				}
+			}
+		}
+		else{
+			iPassing:=False;
+			iWaitCnt--;
+			if(sPassingCnt=0 and sWaitCnt=0 and iWaitCnt=0 and dWaitCnt=0){
+				dWait.signal
+			}
+			else{
+				iWait.signal
+			}
+		}
+	}
+}
+
+procedure entry deleter-Enter(){
+	dWaitCnt++;
+	if(StarvationService){
+		dWait.wait;
+	}
+	else if(sWaitCnt=0 and sPassingCnt=0 and iWaitCnt=0 and dWaitCnt=0){
+		dPassing:=True;
+		iWait.wait;
+	}
+	else{
+		dWait.wait;
+	}
+}
+
+procedure entry deleter-Exit(){
+	if(StarvationService){
+		dStarvationServiceCnt--;
+		if(dStarvationServiceCnt!=0){
+			dWait.signal;
+		}
+		else{
+			StarvationService:=False;
+			sWait.signal;
+			while(dWaitCnt!=0){
+				dWait.signal;
+				dWaitCnt--;
+			}
+		}
+	}
+	else{
+		dPassing:=False;
+			if(sWaitCnt!=0){
+				sWait.signal;
+			}
+			if(iWaitCnt!=0){
+				iWait.signal;
+			}
+			if(sWaitCnt=0 and iWaitCnt=0 and dWaitCnt!=0){
+				dWait.signal;
+			}
+	}
+}
+begin sPassingCnt:=sPassedCnt:=sWaitCnt:=iWaitCnt:=dWaitCnt:=iStarvationServiceCnt:=dStarvationServiceCnt:=0;
+	  StarvationService:=iPassing:=dPassing:=sBlocked:=siEmptying:=False;
+
+Monitor use: var Mysearch_insert_delete:search_insert_delete;
+
+sWait:	{//search; sWait-Enter(pid); searchAndLog; sWait-Exit(pid); stopSearching}
+dWait:	{//delete; dWait-Enter(pid); deleteAndLog; dWait-Exit(pid); stopDeleting}
+iWait:	{//insert; iWait-Enter(pid); insertAndLog; iWait-Exit(pid); stopInserting}
+
+Singaling/signaled process policy: singaling process continues to execute
+									signaled process blocked until signaled process is blocked or leaves monitor
+
+type four_of_a_kind = monitor;
+
+var turn:int
+	gameWon:boolean;
+	card:Enumerated{kind1a, kind1b, kind1c, kind1d, kind2a, kind2b, kind2c, kind2d, ..., kind6a, kind6b, kind6c, kind6d}
+	hand:array [0...3, 0...3] of (int, card);
+	pile:array [0...3, 0...3] of (int, card);
+
+InitializeHandsAndPilesRandomly(pile[*], hand[*]);
+
+Player i:
+	while (!gameWon){
+		if(turn=i){
+			if(FourOfAKind(i)){
+				gameWon:=True;
+			}
+			else{
+				DiscardCardToRightPile(pile[i, ], hand[i, ]);
+				PickUpCardFromLeftPile(pile[i+1mod4,], hand[i,])
+				if(FourOfAKind(i)){
+					gameWon:=True;
+				}
+				else{
+					turn:=i+1(mod 4)
+				}
+			}
+		}
+	}
+
+begin: turn:=0
+		gameWon:=False
+
+Monitor use: myfour_of_a_kind:four_of_a_kind;
+

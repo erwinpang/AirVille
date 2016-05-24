@@ -1,0 +1,31 @@
+
+public class Reporting1 {
+	
+	public int[] generateAscending(int size){
+		int[] arr = new int[size];
+		for(int i = 0; i < size; i++){
+			arr[i] = i;
+		}
+		return arr;
+	}
+	
+	public int[] generateDescending(int size){
+		int[] arr = new int[size];
+		for(int i = size -1 ; i >= 0; i--){
+			arr[i] = i;
+		}
+		return arr;
+	}
+	
+	public int[] generateRandom(int size){
+		int[] arr = new int[size];
+		for(int i = 0; i < size; i++){
+			arr[i] = (int) Math.random() * size;
+		}
+		return arr;
+	}
+	
+	public static void main(String[] args){
+		
+	}
+}
